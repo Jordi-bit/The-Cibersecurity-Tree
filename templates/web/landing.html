@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bienvenido - El Árbol de la Ciberseguridad</title>
+
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/landing.css' %}">
+</head>
+
+<body>
+    <div class="bg-animation" id="bgAnimation">
+        <!-- JS will populate particles here -->
+    </div>
+
+    <div class="container">
+        <div class="hero" id="hero-card">
+            <h1>Cybersecurity Tree</h1>
+            <p>Explora el mapa visual más completo de herramientas y conceptos de seguridad informática.</p>
+
+            <!-- Main Buttons -->
+            <div class="btn-group" id="main-actions">
+                <button class="btn btn-primary" onclick="showLogin()">Iniciar Sesión / Registrarse</button>
+                <button class="btn btn-outline" onclick="enterGuest()">Entrar como
+                    Invitado</button>
+            </div>
+
+            <!-- Login/Register Form -->
+            <div class="form-container" id="auth-form">
+                <h2 id="form-title" style="text-align: center; margin-bottom: 1rem; color: #fff;">Iniciar Sesión</h2>
+                <div class="form-group">
+                    <label for="username">Usuario</label>
+                    <input type="text" id="username" placeholder="Tu nombre de usuario...">
+                </div>
+                <div class="form-group">
+                    <label for="password">Contraseña</label>
+                    <input type="password" id="password" placeholder="Tu contraseña...">
+                </div>
+
+                <button class="btn btn-primary" id="submit-btn" onclick="handleAuth()">Entrar</button>
+                <button class="btn btn-outline" style="margin-top: 0.5rem;" onclick="hideLogin()">Cancelar</button>
+
+                <p class="switch-form" id="switch-msg" onclick="toggleMode()">¿No tienes cuenta? <span
+                        style="color: var(--primary-color);">Regístrate aquí</span></p>
+
+                <div id="auth-msg" class="error-msg"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Particle generation
+        const bg = document.getElementById('bgAnimation');
+        for (let i = 0; i < 20; i++) {
+            const span = document.createElement('span');
+            span.style.left = Math.random() * 100 + '%';
+            span.style.width = Math.random() * 20 + 10 + 'px';
+            span.style.height = span.style.width;
+            span.style.animationDelay = Math.random() * 5 + 's';
+            span.style.animationDuration = Math.random() * 10 + 15 + 's';
+            span.style.background = `rgba(${Math.random() * 255}, 255, 255, 0.1)`;
+            bg.appendChild(span);
+        }
+
+        // Auth Logic Integration
+        let isLoginMode = true;
+
+        function showLogin() {
+            document.getElementById('main-actions').style.display = 'none';
+            document.getElementById('auth-form').style.display = 'block';
+            resetForm();
+        }
+
+        function hideLogin() {
+            document.getElementById('auth-form').style.display = 'none';
+            document.getElementById('main-actions').style.display = 'flex';
+        }
+
+        function enterGuest() {
+            window.location.href = "{% url 'tree' %}";
+        }
+
+        function toggleMode() {
+            isLoginMode = !isLoginMode;
+            const title = document.getElementById('form-title');
+            const submitBtn = document.getElementById('submit-btn');
+            const switchMsg = document.getElementById('switch-msg');
+
+            if (isLoginMode) {
+                title.textContent = "Iniciar Sesión";
+                submitBtn.textContent = "Entrar";
+                switchMsg.innerHTML = '¿No tienes cuenta? <span style="color: var(--primary-color);">Regístrate aquí</span>';
+            } else {
+                title.textContent = "Registrar Nuevo Usuario";
+                submitBtn.textContent = "Registrarse";
+                switchMsg.innerHTML = '¿Ya tienes cuenta? <span style="color: var(--primary-color);">Inicia Sesión</span>';
+            }
+            document.getElementById('auth-msg').textContent = '';
+        }
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        async function handleAuth() {
+            const user = document.getElementById('username').value.trim();
+            const pass = document.getElementById('password').value.trim();
+            const msg = document.getElementById('auth-msg');
+
+            if (!user || !pass) {
+                msg.textContent = "Por favor completa todos los campos.";
+                msg.className = "error-msg";
+                return;
+            }
+
+            const url = isLoginMode ? "{% url 'api_login' %}" : "{% url 'api_register' %}";
+            const csrftoken = getCookie('csrftoken');
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrftoken
+                    },
+                    body: JSON.stringify({ username: user, password: pass })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    msg.textContent = result.message;
+                    msg.className = "success-msg";
+                    if (isLoginMode) {
+                        setTimeout(() => window.location.href = "{% url 'tree' %}", 1000);
+                    } else {
+                        // Auto-login logic might be in view, if so redirect, else switch to login
+                        // My view does auto-login on register
+                        setTimeout(() => window.location.href = "{% url 'tree' %}", 1000);
+                    }
+                } else {
+                    msg.textContent = result.message;
+                    msg.className = "error-msg";
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                msg.textContent = "Error de conexión.";
+                msg.className = "error-msg";
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            document.getElementById('auth-msg').textContent = '';
+            // Reset to login mode visually
+            if (!isLoginMode) {
+                toggleMode();
+            }
+            document.getElementById('form-title').textContent = "Iniciar Sesión";
+            document.getElementById('submit-btn').textContent = "Entrar";
+            document.getElementById('switch-msg').innerHTML = '¿No tienes cuenta? <span style="color: var(--primary-color);">Regístrate aquí</span>';
+            isLoginMode = true;
+        }
+    </script>
+</body>
+
+</html>

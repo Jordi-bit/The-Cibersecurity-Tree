@@ -1,0 +1,333 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa de Ciberseguridad</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=1.2">
+    <link rel="stylesheet" href="{% static 'css/chatbot.css' %}">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+
+<body>
+    <header id="main-header">
+        <div class="header-title-container">
+            <img src="{% static 'assets/images/logo_arbol.png' %}" alt="Logo Árbol Ciberseguridad" class="header-logo">
+            <h1 id="title-main">El Árbol de la Ciberseguridad</h1>
+        </div>
+        <div class="header-controls">
+            {% if user.is_authenticated %}
+            <a href="{% url 'logout' %}" id="btn-logout" class="btn-logout"
+                style="margin-left: 10px; padding: 5px 10px; background: #333; color: #fff; border: 1px solid #555; text-decoration: none; border-radius: 4px; cursor: pointer;">
+                Salir ({{ user.username }})
+            </a>
+            {% else %}
+            <div class="auth-buttons">
+                <button onclick="showAuthModal(true)" class="btn-header">Iniciar Sesión</button>
+                <button onclick="showAuthModal(false)" class="btn-header">Registrarse</button>
+            </div>
+            {% endif %}
+            <div class="language-wrapper" style="display: flex; align-items: center; margin-left: 20px;">
+                <span class="lang-label" style="margin-right: 8px; font-size: 13px; color: #8b949e;">Language:</span>
+                <select id="language-select" onchange="updateLanguage(this.value)">
+                    <option value="es">Español</option>
+                    <option value="en">English</option>
+                </select>
+            </div>
+        </div>
+    </header>
+    <div id="controls-container" {% if not is_tree %}style="display: none;" {% endif %}>
+        <div class="search-box">
+            <input type="text" id="search-input" placeholder="Buscar herramienta (ej. Nmap)...">
+            <span class="search-icon">🔍</span>
+        </div>
+        <div class="filters">
+            <button class="filter-btn active" data-category="all">Mostrar todas las ramas</button>
+            <button class="filter-btn" data-category="Ofensiva">Ofensiva</button>
+            <button class="filter-btn" data-category="Defensiva">Defensiva</button>
+            <button class="filter-btn" data-category="Forense">Forense</button>
+            <button class="filter-btn" data-category="Ciberinteligencia">Inteligencia</button>
+            <button class="filter-btn" data-category="Seguridad Nube">Cloud</button>
+        </div>
+    </div>
+    <div id="tech-legend" {% if not is_tree %}style="display: none;" {% endif %}>
+        <div class="legend-header">
+            <h3 id="legend-title">Estructura del Árbol</h3>
+        </div>
+        <div class="legend-item"><span class="dot cat"></span> <span id="leg-cat">Categoría Principal</span></div>
+        <div class="legend-item"><span class="dot sub"></span> <span id="leg-sub">Sub-rama / Dominio</span></div>
+        <div class="legend-item"><span class="dot tool"></span> <span id="leg-tool">Herramienta / Activo</span></div>
+        <div class="legend-item"><span class="dot active"></span> <span id="leg-active">Selección Actual</span></div>
+        <hr class="legend-divider">
+        <div id="level-selector">
+            <h4 id="level-title">Nivel de Información</h4>
+            <div class="level-buttons">
+                <button class="level-btn" data-level="0" id="btn-basic">Básico</button>
+                <button class="level-btn" data-level="1" id="btn-normal">Normal</button>
+                <button class="level-btn active" data-level="2" id="btn-pro">Pro</button>
+            </div>
+        </div>
+    </div>
+    <div id="tree-container" {% if not is_tree %}style="display: none;" {% endif %}></div>
+
+    {% block content %}
+    <!-- Password reset forms will be injected here -->
+    {% endblock %}
+
+    <div id="image-popup" class="hidden">
+        <div class="popup-content">
+            <img id="popup-img" src="{% static 'assets/images/aplicaciones/tool_placeholder.png' %}" alt="Tool Preview">
+
+            <div class="popup-info">
+                <h2 id="node-name">Nombre</h2>
+                <p id="node-description">Descripción breve de la función.</p>
+            </div>
+            <div id="popup-links" class="popup-links hidden">
+                <h3 id="resources-title">Recursos</h3>
+                <div class="links-container">
+                    <a id="link-official" href="#" target="_blank" class="link-btn">
+                        <span class="icon">🌐</span> <span id="btn-official">Sitio Oficial</span>
+                    </a>
+                    <a id="link-tutorial" href="#" target="_blank" class="link-btn">
+                        <span class="icon">📖</span> <span id="btn-tutorial">Tutorial</span>
+                    </a>
+                    <a id="link-github" href="#" target="_blank" class="link-btn github">
+                        <span class="icon">💻</span> <span id="btn-github">GitHub</span>
+                    </a>
+                    <a id="link-reddit" href="#" target="_blank" class="link-btn reddit">
+                        <span class="icon">💬</span> <span id="btn-reddit">Reddit</span>
+                    </a>
+                    <a id="link-youtube" href="#" target="_blank" class="link-btn youtube">
+                        <span class="icon">🎥</span> <span id="btn-youtube">YouTube</span>
+                    </a>
+                    <a id="link-youtube2" href="#" target="_blank" class="link-btn youtube">
+                        <span class="icon">🎥</span> <span id="btn-youtube2">YouTube</span>
+                    </a>
+                    <a id="link-youtube3" href="#" target="_blank" class="link-btn youtube">
+                        <span class="icon">🎥</span> <span id="btn-youtube3">YouTube</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Auth Modal -->
+    <div id="auth-modal" class="modal hidden">
+        <div class="modal-content" style="max-width: 400px; text-align: center;">
+            <span class="close-modal" onclick="closeAuthModal()">&times;</span>
+            <div id="auth-form-container" class="form-container" style="display: block;">
+                <h2 id="auth-form-title" style="text-align: center; margin-bottom: 1rem; color: #58a6ff;">Iniciar Sesión
+                </h2>
+                <div class="form-group">
+                    <label for="username">Usuario</label>
+                    <input type="text" id="username" placeholder="Tu nombre de usuario...">
+                </div>
+                <div class="form-group">
+                    <label for="password">Contraseña</label>
+                    <input type="password" id="password" placeholder="Tu contraseña...">
+                </div>
+                <div class="form-group" id="email-group" style="display: none;">
+                    <label for="auth-email">Email</label>
+                    <input type="email" id="auth-email" placeholder="Correo Electrónico" required>
+                </div>
+
+                <button class="btn btn-primary" id="auth-submit-btn" onclick="handleAuth()">Entrar</button>
+
+                <p class="switch-form" id="auth-switch-msg" onclick="toggleAuthMode()">¿No tienes cuenta? <span
+                        style="color: #58a6ff;">Regístrate aquí</span></p>
+
+                <p id="forgot-password-link" style="display: block; margin-top: 10px; font-size: 13px;">
+                    <a href="{% url 'password_reset' %}" style="color: #8b949e; text-decoration: none;">¿Olvidaste tu
+                        contraseña?</a>
+                </p>
+
+                <div id="auth-msg" class="error-msg"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tutorial Modal -->
+    <div id="tutorial-modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2 id="modal-title">Tutorial Rápido</h2>
+            <div id="modal-body">
+                <!-- Content will be injected here -->
+            </div>
+        </div>
+    </div>
+    <div id="chatbot-fab">
+        <span style="font-size: 30px;">💬</span>
+    </div>
+
+    <div id="chatbot-window">
+        <div class="chat-header">
+            <h3>CyberBot 🤖</h3>
+            <button class="chat-close-btn">&times;</button>
+        </div>
+        <div id="chat-messages">
+            <div class="message bot" id="chat-greeting">
+                ¡Hola! Soy tu asistente de ciberseguridad. ¿En qué puedo ayudarte?
+            </div>
+        </div>
+        <div class="chat-input-container">
+            <input type="text" id="chat-input" placeholder="Escribe tu pregunta...">
+            <button id="chat-send-btn">➤</button>
+        </div>
+    </div>
+
+
+    <!-- User Context for JS -->
+    <script>
+        const USER_LEVEL = Number("{{ user_level|default:0 }}");
+        const IS_AUTHENTICATED = "{{ user.is_authenticated|yesno:'true,false' }}" === "true";
+
+        // Auth Logic
+        let isLoginMode = true;
+        const authModal = document.getElementById('auth-modal');
+
+        function showAuthModal(loginMode = true) {
+            isLoginMode = loginMode;
+            updateAuthUI();
+            authModal.classList.add('visible');
+            authModal.style.display = 'flex';
+        }
+
+        function closeAuthModal() {
+            // Immediate reset if not logged in
+            if (typeof IS_AUTHENTICATED !== 'undefined' && !IS_AUTHENTICATED) {
+                window.location.reload();
+                return;
+            }
+
+            authModal.classList.remove('visible');
+            setTimeout(() => {
+                authModal.style.display = 'none';
+                resetAuthForm();
+            }, 300);
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function (event) {
+            if (event.target == authModal) {
+                closeAuthModal();
+            }
+            // Existing tutorial modal close logic if any
+            const tutorialModal = document.getElementById('tutorial-modal');
+            if (tutorialModal && event.target == tutorialModal) {
+                tutorialModal.classList.remove('visible');
+                setTimeout(() => tutorialModal.style.display = 'none', 300);
+            }
+        }
+
+        function toggleAuthMode() {
+            isLoginMode = !isLoginMode;
+            updateAuthUI();
+        }
+
+        function updateAuthUI() {
+            const title = document.getElementById('auth-form-title');
+            const submitBtn = document.getElementById('auth-submit-btn');
+            const switchMsg = document.getElementById('auth-switch-msg');
+            const msg = document.getElementById('auth-msg');
+
+            msg.textContent = ''; // Clear errors
+
+            if (isLoginMode) {
+                title.textContent = "Iniciar Sesión";
+                submitBtn.textContent = "Entrar";
+                switchMsg.innerHTML = '¿No tienes cuenta? <span style="color: #58a6ff;">Regístrate aquí</span>';
+                document.getElementById('email-group').style.display = 'none';
+                document.getElementById('forgot-password-link').style.display = 'block';
+            } else {
+                title.textContent = "Registrar Nuevo Usuario";
+                submitBtn.textContent = "Registrarse";
+                switchMsg.innerHTML = '¿Ya tienes cuenta? <span style="color: #58a6ff;">Inicia Sesión</span>';
+                document.getElementById('email-group').style.display = 'block';
+                document.getElementById('forgot-password-link').style.display = 'none';
+            }
+        }
+
+        function resetAuthForm() {
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            document.getElementById('auth-email').value = '';
+            document.getElementById('auth-msg').textContent = '';
+        }
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        async function handleAuth() {
+            const user = document.getElementById('username').value.trim();
+            const pass = document.getElementById('password').value.trim();
+            const email = document.getElementById('auth-email').value.trim();
+            const msg = document.getElementById('auth-msg');
+
+            if (!user || !pass || (!isLoginMode && !email)) {
+                msg.textContent = isLoginMode ? "Por favor completa todos los campos." : "Por favor completa todos los campos, el email es obligatorio.";
+                msg.style.display = 'block';
+                return;
+            }
+
+            const url = isLoginMode ? "{% url 'api_login' %}" : "{% url 'api_register' %}";
+            const csrftoken = getCookie('csrftoken');
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrftoken
+                    },
+                    body: JSON.stringify({ username: user, password: pass, email: email })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    msg.textContent = result.message;
+                    msg.className = "success-msg";
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    msg.textContent = result.message;
+                    msg.className = "error-msg";
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                msg.textContent = "Error de conexión.";
+                msg.className = "error-msg";
+            }
+        }
+    </script>
+    <script src="{% static 'js/knowledge_base.js' %}"></script>
+    <script src="{% static 'js/chatbot.js' %}"></script>
+    <script src="{% static 'js/data_v3.js' %}?v=2.0"></script>
+    <script src="{% static 'js/script.js' %}?v=6"></script>
+    <footer id="main-footer">
+        <div class="contact-info">
+            <span>🌐 www.arbolciberseguridad.com</span>
+            <span class="separator">|</span>
+            <span>📞 +34 900 123 456</span>
+        </div>
+    </footer>
+</body>
+
+</html>
