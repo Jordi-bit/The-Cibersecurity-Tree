@@ -50,7 +50,7 @@ def api_register(request):
         
         try:
             user = User.objects.create_user(username=username, password=password, email=email)
-            login(request, user) # Auto login
+            login(request, user, backend='django.contrib.auth.backends.ModelBackend') # Auto login
             return JsonResponse({'success': True, 'message': 'Registro exitoso.'})
         except Exception as e:
             return JsonResponse({'success': False, 'message': str(e)})
@@ -69,7 +69,7 @@ def api_login(request):
         
         user = authenticate(request, username=username, password=password)
         if user is not None:
-            login(request, user)
+            login(request, user, backend='django.contrib.auth.backends.ModelBackend')
             return JsonResponse({'success': True, 'message': 'Bienvenido.'})
         else:
             return JsonResponse({'success': False, 'message': 'Usuario o contraseña incorrectos.'})

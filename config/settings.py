@@ -124,17 +124,6 @@ DATABASES = {
         conn_health_checks=True,
     )
 }
-
-# Database diagnostic logging
-print(f"--- DB CONFIG ---")
-db_url = os.environ.get('DATABASE_URL')
-if db_url:
-    print(f"DATABASE_URL detected. Using: {DATABASES['default']['ENGINE']}")
-else:
-    print(f"DATABASE_URL NOT detected. Falling back to SQLite.")
-print(f"-----------------")
-
-
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 
