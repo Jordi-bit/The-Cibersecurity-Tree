@@ -22,3 +22,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("", include("web.urls")),
 ]
+
+handler403 = 'web.views.error_403'
+handler404 = 'web.views.error_404'
+handler500 = 'web.views.error_500'

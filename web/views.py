@@ -22,8 +22,11 @@ def tree_view(request):
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 
-@ratelimit(key='ip', rate='5/m', method='POST', block=True)
+@ratelimit(key='ip', rate='5/m', method='POST', block=False)
 def api_register(request):
+    if getattr(request, 'limited', False):
+        return JsonResponse({'success': False, 'message': 'Demasiados intentos de registro. Inténtalo de nuevo más tarde.'}, status=429)
+    
     if request.method == 'POST':
         data = json.loads(request.body)
         username = data.get('username')
@@ -54,8 +57,11 @@ def api_register(request):
             
     return JsonResponse({'success': False, 'message': 'Método no permitido.'}, status=405)
 
-@ratelimit(key='ip', rate='10/m', method='POST', block=True)
+@ratelimit(key='ip', rate='10/m', method='POST', block=False)
 def api_login(request):
+    if getattr(request, 'limited', False):
+        return JsonResponse({'success': False, 'message': 'Demasiados intentos de acceso. Por favor, espera unos minutos.'}, status=429)
+
     if request.method == 'POST':
         data = json.loads(request.body)
         username = data.get('username')
@@ -76,3 +82,11 @@ def api_logout(request):
 
 def get_csrf_token(request):
     return JsonResponse({'csrfToken': get_token(request)})
+def error_403(request, exception=None):
+    return render(request, 'errors/403.html', status=403)
+
+def error_404(request, exception=None):
+    return render(request, 'errors/404.html', status=404)
+
+def error_500(request):
+    return render(request, 'errors/500.html', status=500)
