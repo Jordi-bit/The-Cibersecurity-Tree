@@ -37,14 +37,16 @@ ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1,.onrender.com").
 # Security SSL/TLS Settings (Production)
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-    SECURE_SSL_REDIRECT = True
+    # Redirect to HTTPS only if we are not on localhost/127.0.0.1
+    is_local = os.getenv("IS_LOCAL_DEV") == "True"
+    SECURE_SSL_REDIRECT = not is_local
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
-    SECURE_HSTS_SECONDS = 31536000  # 1 year
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    # SECURE_HSTS_PRELOAD = True  # Disabled to avoid strict browser blocking during migration
+    SECURE_HSTS_SECONDS = 0 if is_local else 31536000  # 0 disables HSTS for local testing
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = not is_local
+    # SECURE_HSTS_PRELOAD = True  # Disabled to avoid strict browser blocking
 
 
 # Application definition
