@@ -1,6 +1,6 @@
 // Set up dimensions
-const width = window.innerWidth;
-const height = window.innerHeight;
+let width = window.innerWidth;
+let height = window.innerHeight;
 
 let currentLang = 'es';
 let currentLevel = 2; // Default to Pro, but will be overridden by Auth
@@ -154,6 +154,16 @@ const svg = d3.select("#tree-container").append("svg")
     .call(zoom);
 
 const g = svg.append("g");
+
+// Update dimensions on resize
+window.addEventListener("resize", () => {
+    width = window.innerWidth;
+    height = window.innerHeight;
+    svg.attr("width", width).attr("height", height);
+    if (typeof root !== 'undefined') {
+        fitToScreen();
+    }
+});
 
 const tree = d3.tree().nodeSize([40, 250]); // Adjust node spacing
 
