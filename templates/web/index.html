@@ -8,7 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mapa de Ciberseguridad</title>
     {% load static %}
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=1.5">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=1.8">
     <link rel="stylesheet" href="{% static 'css/chatbot.css' %}">
     <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
@@ -20,6 +20,12 @@
             <h1 id="title-main">El Árbol de la Ciberseguridad</h1>
         </div>
         <div class="header-controls">
+            <!-- Mobile Toggle Buttons -->
+            <div id="mobile-toggles">
+                <button id="toggle-filters" class="mobile-toggle-btn" title="Mostrar Filtros">🔍</button>
+                <button id="toggle-legend" class="mobile-toggle-btn" title="Mostrar Leyenda">📊</button>
+            </div>
+
             {% if user.is_authenticated %}
             <a href="{% url 'logout' %}" id="btn-logout" class="btn-logout"
                 style="margin-left: 10px; padding: 5px 10px; background: #333; color: #fff; border: 1px solid #555; text-decoration: none; border-radius: 4px; cursor: pointer;">
@@ -58,6 +64,9 @@
         <div class="legend-header">
             <h3 id="legend-title">Estructura del Árbol</h3>
         </div>
+
+
+        <div class="legend-item"><span class="dot cat"></span> <span id="leg-cat">Categoría Principal</span></div>
         <div class="legend-item"><span class="dot cat"></span> <span id="leg-cat">Categoría Principal</span></div>
         <div class="legend-item"><span class="dot sub"></span> <span id="leg-sub">Sub-rama / Dominio</span></div>
         <div class="legend-item"><span class="dot tool"></span> <span id="leg-tool">Herramienta / Activo</span></div>
@@ -66,9 +75,9 @@
         <div id="level-selector">
             <h4 id="level-title">Nivel de Información</h4>
             <div class="level-buttons">
-                <button class="level-btn" data-level="0" id="btn-basic">Básico</button>
+                <button class="level-btn active" data-level="0" id="btn-basic">Básico</button>
                 <button class="level-btn" data-level="1" id="btn-normal">Normal</button>
-                <button class="level-btn active" data-level="2" id="btn-pro">Pro</button>
+                <button class="level-btn" data-level="2" id="btn-pro">Pro</button>
             </div>
         </div>
     </div>
@@ -318,9 +327,9 @@
         }
     </script>
     <script src="{% static 'js/knowledge_base.js' %}"></script>
+    <script src="{% static 'js/script.js' %}?v=7"></script>
     <script src="{% static 'js/chatbot.js' %}"></script>
-    <script src="{% static 'js/data_v3.js' %}?v=2.0"></script>
-    <script src="{% static 'js/script.js' %}?v=6"></script>
+    <button id="tts-fab" title="Activar/Desactivar Voz" style="display: none;">🔇</button>
     <footer id="main-footer">
         <div class="contact-info">
             <span>🌐 www.arbolciberseguridad.com</span>

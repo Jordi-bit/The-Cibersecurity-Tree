@@ -1,4 +1,4 @@
-const treeData = {
+{
     "name": "Ciberseguridad",
     "nameEn": "Cybersecurity",
     "image": "/static/assets/images/ramas/ciberseguridad.png",
@@ -328,7 +328,7 @@ const treeData = {
                         }
                     ],
                     "image": "/static/assets/images/subramas/cracking.png"
-                },
+                }
             ]
         },
         {
@@ -1255,7 +1255,6 @@ const treeData = {
                     "youtube_label": "Normativas",
                     "youtube_labelEn": "Compliance",
                     "children": [
-
                         {
                             "name": "NIST",
                             "image": "/static/assets/images/aplicaciones/tool_placeholder.png",
@@ -1453,8 +1452,7 @@ const treeData = {
                             "github": "https://github.com/topics/iso-27701",
                             "tutorial_content": "<h4>Privacidad / RGPD</h4><p>El estándar de referencia para cumplir con el RGPD. Añade la 'Privacidad' a la 'Seguridad' para una gestión integral de los datos personales.</p>",
                             "tutorial_contentEn": "<h4>Privacy / GDPR</h4><p>The reference standard for GDPR compliance. Adds 'Privacy' to 'Security' for comprehensive personal data management.</p>"
-                        },
-
+                        }
                     ],
                     "image": "/static/assets/images/subramas/tool_placeholder.png"
                 }
@@ -1560,8 +1558,7 @@ const treeData = {
                     ],
                     "image": "/static/assets/images/subramas/threat_modeling.png"
                 }
-            ],
-
+            ]
         },
         {
             "name": "Redes",
@@ -1588,7 +1585,6 @@ const treeData = {
                     "youtube": "https://youtu.be/vyD4-ckMYfo",
                     "youtube_label": "Que es un Firewall",
                     "youtube_labelEn": "What is a Firewall?",
-
                     "children": [
                         {
                             "name": "Palo Alto",
@@ -1798,8 +1794,7 @@ const treeData = {
                     ],
                     "image": "/static/assets/images/subramas/mfa.png"
                 }
-            ],
-
+            ]
         },
         {
             "name": "Endpoints",
@@ -1943,8 +1938,7 @@ const treeData = {
                     ],
                     "image": "/static/assets/images/subramas/awareness.png"
                 }
-            ],
-
+            ]
         },
         {
             "name": "OT_IoT",
@@ -2018,8 +2012,7 @@ const treeData = {
                     ],
                     "image": "/static/assets/images/subramas/iot.png"
                 }
-            ],
-
+            ]
         },
         {
             "name": "Hardware",
@@ -2071,8 +2064,7 @@ const treeData = {
                     ],
                     "image": "/static/assets/images/subramas/sidechannel.png"
                 }
-            ],
-
+            ]
         },
         {
             "name": "IA_Seguridad",
@@ -2148,8 +2140,7 @@ const treeData = {
                     ],
                     "image": "/static/assets/images/subramas/ai_red_team.png"
                 }
-            ],
-
+            ]
         },
         {
             "name": "Blockchain",
@@ -2223,8 +2214,7 @@ const treeData = {
                     ],
                     "image": "/static/assets/images/subramas/defi.png"
                 }
-            ],
-
+            ]
         },
         {
             "name": "SupplyChain",
@@ -2281,8 +2271,7 @@ const treeData = {
                     ],
                     "image": "/static/assets/images/subramas/dependencias.png"
                 }
-            ],
-
+            ]
         },
         {
             "name": "Concienciación",
@@ -2333,10 +2322,7 @@ const treeData = {
                     ],
                     "image": "/static/assets/images/subramas/simulaciones.png"
                 }
-            ],
-
+            ]
         }
     ]
-};
-
-
+}

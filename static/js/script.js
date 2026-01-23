@@ -1,27 +1,182 @@
 // Set up dimensions
-let width = window.innerWidth;
-let height = window.innerHeight;
+var width = window.innerWidth;
+var height = window.innerHeight;
 
-let currentLang = 'es';
-let currentLevel = 2; // Default to Pro, but will be overridden by Auth
+// Global variables assigned to window for cross-script access
+window.treeData = null;
+window.root = null;
+window.currentLang = 'es';
+window.currentLevel = 0;
 let lastSelectedNode = null;
 
-// Auth Status Check (from Django Context)
-// USER_LEVEL and IS_AUTHENTICATED are defined in index.html
+// Shorthands for convenience within this script
+var treeData = window.treeData;
+var root = window.root;
+var currentLevel = window.currentLevel;
+var currentLang = window.currentLang;
+
 document.addEventListener("DOMContentLoaded", () => {
-
+    console.log("DOM Content Loaded. Initializing app...");
     // Access Control Logic
-    if (typeof USER_LEVEL !== 'undefined') {
-        currentLevel = USER_LEVEL;
+    if (typeof USER_LEVEL !== 'undefined' && USER_LEVEL !== null) {
+        currentLevel = Number(USER_LEVEL);
+    }
+    console.log("Initial Level:", currentLevel);
+
+    // Initial load
+    initTree();
+
+    // Language selector event listener
+    const langSelector = document.getElementById('language-select');
+    if (langSelector) {
+        langSelector.addEventListener('change', (e) => {
+            updateLanguage(e.target.value);
+        });
     }
 
-    /* lockPremiumFeatures removed - using updateLevel auth check instead */
+    // Level selector listeners
+    const levelBtns = document.querySelectorAll('.level-btn');
+    levelBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const level = parseInt(btn.dataset.level);
+            console.log("Setting level to:", level);
+            updateLevel(level);
+        });
+    });
 
-    // Initial filter application based on level
-    if (typeof root !== 'undefined') {
-        updateLevel(currentLevel);
-    }
+    // Mobile Toggles Initial State and Listeners
+    setupMobileToggles();
+
+    // Initialize TTS
+    initTTS();
 });
+
+let ttsSynthesis = window.speechSynthesis;
+let ttsUtterance = null;
+let isSpeaking = false;
+let ttsEnabled = false; // Global mute state, default OFF
+
+function initTTS() {
+    const ttsFab = document.getElementById('tts-fab');
+    if (ttsFab) {
+        ttsFab.style.display = 'flex'; // Show the button
+
+        ttsFab.addEventListener('click', () => {
+            ttsEnabled = !ttsEnabled;
+
+            if (ttsEnabled) {
+                // Unmute
+                ttsFab.textContent = "🔊";
+                ttsFab.classList.add('active');
+
+                // If a node is currently open, start speaking it
+                if (lastSelectedNode && document.getElementById('image-popup').classList.contains('visible')) {
+                    const text = (currentLang === 'en' && lastSelectedNode.data.descriptionEn) ?
+                        lastSelectedNode.data.descriptionEn :
+                        (lastSelectedNode.data.description || "Explorando... ");
+                    speakText(text);
+                }
+            } else {
+                // Mute
+                ttsFab.textContent = "🔇";
+                ttsFab.classList.remove('active');
+                if (ttsSynthesis) ttsSynthesis.cancel();
+            }
+        });
+    }
+}
+
+function speakText(text) {
+    if (!ttsSynthesis || !ttsEnabled) return;
+
+    // Stop current speech
+    ttsSynthesis.cancel();
+
+    ttsUtterance = new SpeechSynthesisUtterance(text);
+
+    // Set language and voice
+    ttsUtterance.lang = currentLang === 'es' ? 'es-ES' : 'en-US';
+
+    // Find a pleasant voice
+    const voices = ttsSynthesis.getVoices();
+    const preferredVoice = voices.find(v => v.lang.includes(currentLang === 'es' ? 'es' : 'en') && (v.name.includes('Google') || v.name.includes('Female') || v.name.includes('Helena')));
+    if (preferredVoice) ttsUtterance.voice = preferredVoice;
+
+    const ttsFab = document.getElementById('tts-fab');
+
+    ttsUtterance.onstart = () => {
+        isSpeaking = true;
+        // Animation already handled by active class for global state
+    };
+
+    ttsUtterance.onend = () => {
+        isSpeaking = false;
+    };
+
+    ttsUtterance.onerror = () => {
+        isSpeaking = false;
+    };
+
+    ttsSynthesis.speak(ttsUtterance);
+}
+
+function setupMobileToggles() {
+    const filterBtn = document.getElementById('toggle-filters');
+    const legendBtn = document.getElementById('toggle-legend');
+    const controls = document.getElementById('controls-container');
+    const legend = document.getElementById('tech-legend');
+
+    if (window.innerWidth <= 768) {
+        if (controls) controls.classList.add('mobile-hidden');
+        if (legend) legend.classList.add('mobile-hidden');
+    }
+
+    if (filterBtn && controls) {
+        filterBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isHidden = controls.classList.contains('mobile-hidden');
+            if (isHidden) {
+                controls.classList.remove('mobile-hidden');
+                if (legend) legend.classList.add('mobile-hidden');
+                filterBtn.classList.add('btn-active');
+                if (legendBtn) legendBtn.classList.remove('btn-active');
+            } else {
+                controls.classList.add('mobile-hidden');
+                filterBtn.classList.remove('btn-active');
+            }
+        });
+    }
+
+    if (legendBtn && legend) {
+        legendBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isHidden = legend.classList.contains('mobile-hidden');
+            if (isHidden) {
+                legend.classList.remove('mobile-hidden');
+                if (controls) controls.classList.add('mobile-hidden');
+                legendBtn.classList.add('btn-active');
+                if (filterBtn) filterBtn.classList.remove('btn-active');
+            } else {
+                legend.classList.add('mobile-hidden');
+                legendBtn.classList.remove('btn-active');
+            }
+        });
+    }
+
+    // Close on click outside if on mobile
+    document.addEventListener('click', (event) => {
+        if (window.innerWidth <= 768) {
+            if (controls && !controls.contains(event.target) && !filterBtn.contains(event.target)) {
+                controls.classList.add('mobile-hidden');
+                filterBtn.classList.remove('btn-active');
+            }
+            if (legend && !legend.contains(event.target) && !legendBtn.contains(event.target)) {
+                legend.classList.add('mobile-hidden');
+                legendBtn.classList.remove('btn-active');
+            }
+        }
+    });
+}
 
 const uiTranslations = {
     'es': {
@@ -126,24 +281,7 @@ function updateLanguage(lang) {
     }
 }
 
-// Language selector event listener
-document.addEventListener('DOMContentLoaded', () => {
-    const langSelector = document.getElementById('language-select');
-    if (langSelector) {
-        langSelector.addEventListener('change', (e) => {
-            updateLanguage(e.target.value);
-        });
-    }
-
-    // Level selector listeners
-    const levelBtns = document.querySelectorAll('.level-btn');
-    levelBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            updateLevel(parseInt(btn.dataset.level));
-        });
-    });
-});
-
+// Zoom logic handled by d3
 const zoom = d3.zoom().on("zoom", (event) => {
     g.attr("transform", event.transform);
 });
@@ -160,7 +298,7 @@ window.addEventListener("resize", () => {
     width = window.innerWidth;
     height = window.innerHeight;
     svg.attr("width", width).attr("height", height);
-    if (typeof root !== 'undefined') {
+    if (root) {
         fitToScreen();
     }
 });
@@ -182,12 +320,49 @@ const getNodeColor = (d) => {
     return "#8b949e"; // Root or other: Grey
 };
 
-let root = d3.hierarchy(treeData);
-root.x0 = height / 2;
-root.y0 = 0;
+async function initTree() {
+    console.log("initTree started...");
+    try {
+        const response = await fetch("/static/js/tree_data.json");
+        console.log("Fetch response status:", response.status);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
-// Initial render
-update(root);
+        window.treeData = await response.json();
+        treeData = window.treeData; // Update local shorthand
+        console.log("Tree data loaded successfully. Root name:", treeData.name);
+
+        if (!treeData.children || treeData.children.length === 0) {
+            console.warn("Tree data has no children!");
+        }
+
+        // Initial hierarchy
+        window.root = d3.hierarchy(window.treeData);
+        root = window.root; // Update local shorthand
+        root.x0 = height / 2;
+        root.y0 = 0;
+
+        // Apply initial level
+        console.log("Initializing tree with level:", window.currentLevel);
+        updateLevel(window.currentLevel);
+
+        // Start animations and interactions AFTER level is set and tree is rendered
+        console.log("Starting animations and interactions...");
+        setupInteractions();
+        setupInteractivity();
+        animate();
+
+    } catch (error) {
+        console.error("Error loading tree_data.json:", error);
+        const container = document.getElementById("tree-container");
+        if (container) {
+            container.innerHTML = `<div style="color: white; padding: 20px; background: rgba(255,0,0,0.5); position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); border-radius: 10px; z-index: 10000;">
+                <h3>Error cargando datos del árbol</h3>
+                <p>${error.message}</p>
+                <p>Verifica que /static/js/tree_data.json existe.</p>
+            </div>`;
+        }
+    }
+}
 
 function handleNodeClick(event, d) {
     isAnimating = false; // Stop auto-traversal on click
@@ -441,6 +616,13 @@ function showPopup(d) {
     centerNode(d);
 
     popup.classList.add("visible");
+
+    // Auto-dictation (only if enabled)
+    if (ttsEnabled) {
+        const textToSpeak = (currentLang === 'en' && d.data.descriptionEn) ? d.data.descriptionEn : (d.data.description || fallbackDesc);
+        // Small delay to ensure popup is ready
+        setTimeout(() => speakText(textToSpeak), 200);
+    }
 }
 
 function centerNode(d) {
@@ -456,7 +638,8 @@ function centerNode(d) {
 
 function hidePopup() {
     if (popup) popup.classList.remove("visible");
-    // Keep the green links visible - don't reset them
+    // Stop speaking when closed
+    if (ttsSynthesis) ttsSynthesis.cancel();
 }
 
 function openTutorialModal(title, content) {
@@ -537,10 +720,7 @@ function setupInteractions() {
     }
 }
 
-// Start sequence
-setupInteractions();
-setupInteractivity();
-animate();
+// Start sequence moved to initTree()
 
 function setupInteractivity() {
     const searchInput = document.getElementById("search-input");
@@ -766,8 +946,22 @@ function updateLevel(level) {
     });
 
     // Re-filter and re-render tree
-    const nodesToKeep = treeData.children.filter(d => (d.minLevel || 0) <= currentLevel);
-    const filteredTreeData = { ...treeData, children: nodesToKeep };
+    if (!treeData) {
+        console.warn("updateLevel called but treeData is null");
+        return;
+    }
+
+    // Helper function to deep filter children based on level
+    function filterNodes(node, level) {
+        if (!node.children) return { ...node };
+        const filteredChildren = node.children
+            .filter(child => (child.minLevel || 0) <= level)
+            .map(child => filterNodes(child, level));
+        return { ...node, children: filteredChildren };
+    }
+
+    const filteredTreeData = filterNodes(treeData, currentLevel);
+    console.log("Filtered nodes for level", currentLevel, ":", filteredTreeData.children ? filteredTreeData.children.length : 0);
 
     // Re-initialize hierarchy
     root = d3.hierarchy(filteredTreeData);
@@ -781,7 +975,8 @@ function updateLevel(level) {
     // Refresh sidebar menu (which uses root.children)
     renderMenu();
 
-    fitToScreen();
+    // Ensure it fits after update
+    setTimeout(fitToScreen, 800);
 
     console.log("Tree filtered to level:", level);
 }
